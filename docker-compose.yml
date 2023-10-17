@@ -32,7 +32,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/config
       - ./debug:/media/frigate
-      - /dev/bus/usb:/dev/bus/usb
+      - /Users/yifeiwang/Desktop/frigate_proj/frigate/media
+      # - /dev/bus/usb:/dev/bus/usb
   mqtt:
     container_name: mqtt
     image: eclipse-mosquitto:1.6

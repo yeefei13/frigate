@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import pandas as pd
 from typing import List
+import json
+import shutil
 
 from evadb.functions.abstract.abstract_function import AbstractClassifierFunction
 from evadb.functions.gpu_compatible import GPUCompatible
@@ -35,37 +37,58 @@ class ObjectDetector(AbstractClassifierFunction, GPUCompatible):
     def to_device(self):
         pass
     
-    def forward(self, video_path: pd.DataFrame) -> pd.DataFrame:
+    def forward(self, video_paths: pd.DataFrame) -> pd.DataFrame:
         # List to store the results
-        print(video_path)
         results = []
+
+        # Create a list to store the video paths
+        input_paths = video_paths['video_path'].tolist()
         
-        # Iterate through the DataFrame of video paths
-        for idx, row in video_path.iterrows():
-            one_path = row['video_path']
+        try:
+            # Process all video clips and get the output paths
+            detected_objects = self.object_detector(input_paths)
             
-            try:
-                # Process each video and get the output path
-                print("path is here",one_path,"\n")
-                detected_objects = self.object_detector(one_path)
-                # Add the result to the results list
-                results.append({'output_video_path': detected_objects})
-                
-                # Log successful processing using the specific logger
-                logger.info(f"Successfully processed {one_path}, output saved to {detected_objects}")
+            # Log successful processing using the specific logger
+            logger.info(f"Successfully processed all video clips, output saved to {detected_objects}")
             
-            except Exception as e:
-                # Log any exceptions that occur during processing using the specific logger
-                logger.error(f"Error processing {one_path}: {str(e)}")
+            # Create a DataFrame with input and output paths
+            for input_path, output_path in zip(input_paths, detected_objects):
+                results.append({'output_video_path': output_path})
+        
+        except Exception as e:
+            # Log any exceptions that occur during processing using the specific logger
+            logger.error(f"Error processing video clips: {str(e)}")
+
         # Create a DataFrame from the results and return it
         return pd.DataFrame(results)
-    
-    def object_detector(self,input_path):
+
+    def object_detector(self, input_paths):
         output_folder = '/media/output/'
-        output_path = os.path.join(output_folder, os.path.basename(input_path))
+        output_paths = []
 
-        # Construct command and call your script
-        cmd = ['python3', 'process_clip.py', '--path', input_path, '--output', output_folder]
-        process = subprocess.run(cmd, check=True)
+        # Construct the command to process all input paths at once
+        cmd = ['python3', 'process_clip.py', '--path'] + input_paths + ['--output', output_folder]
 
-        return output_path
+        # Capture the output of the subprocess
+        try:
+            completed_process = subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+            # Check if the subprocess ran successfully
+            if completed_process.returncode == 0:
+                # Define the path to the generated CSV file
+                generated_csv_path = os.path.join(output_folder, 'detection_results.csv')
+
+                # Copy the generated CSV file to the output folder
+                shutil.copy('path_of_generated_csv_file.csv', generated_csv_path)
+
+                # Read the CSV file to extract the "file" column
+                df = pd.read_csv(generated_csv_path)
+                
+                # Append output paths for all input paths based on the "file" column
+                output_paths.extend(df['file'].tolist())
+        except subprocess.CalledProcessError as e:
+            # Handle any errors that occurred during subprocess execution
+            print(f"Error running the subprocess: {e}")
+
+        return output_paths
+
