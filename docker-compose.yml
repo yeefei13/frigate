@@ -32,7 +32,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/config
       - ./debug:/media/frigate
-      - /Users/yifeiwang/Desktop/frigate_proj/frigate/media
+      - ./frigate/media:/media/frigate
       # - /dev/bus/usb:/dev/bus/usb
   mqtt:
     container_name: mqtt
