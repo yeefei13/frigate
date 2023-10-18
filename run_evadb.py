@@ -22,7 +22,7 @@ cursor.query("""CREATE TABLE IF NOT EXISTS video_info(
              """).df()
 cursor.query("""
     INSERT INTO video_info(video_id, video_name, video_path)
-    VALUES (1,"ringing doorbell", "/com.docker.devenvironments.code/media/ringing_doorbell.mp4"
+    VALUES (1,"ringing doorbell", "/workspace/frigate/media/ringing_doorbell.mp4"
     );
 """).df()
 
